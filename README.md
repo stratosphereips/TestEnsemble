@@ -1,2 +1,2 @@
 # TestEnsemble
-Testing ensemble learning modules for SLIPS
+This version of repository contains ensemble learning tests for SLIPS.
