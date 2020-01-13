@@ -121,16 +121,17 @@ def create_dataset_labelByIPSrc(d2):
 	
 def create_dataset_confusionmatrix(dConfusion):
 						    
-    df3 = pd.DataFrame([key for key in dConfusion.keys()], columns=['PercentegeCountThresholdPIDst'])
-    df3['ThresholdPercentegeMaliciousFlowsPerIPDst'] = [value['ThresholdPercentegeMaliciousFlowsPerIPDst'] for value in dConfusion.values()]
-    df3['ThresholdCounterMaliciousFlowsPerIPDst'] = [value['ThresholdCounterMaliciousFlowsPerIPDst'] for value in dConfusion.values()]
-    df3['ThresholdMaliciousIPSrc-IPDst'] = [value['ThresholdMaliciousIPSrc-IPDst'] for value in dConfusion.values()]
-    df3['FP'] = [value['FP'] for value in dConfusion.values()]
-    df3['FN'] = [value['FN'] for value in dConfusion.values()]
-    df3['TP'] = [value['TP'] for value in dConfusion.values()]
-    df3['TN'] = [value['TN'] for value in dConfusion.values()]
+    df4 = pd.DataFrame([key for key in dConfusion.keys()], columns=['PercentegeCountThresholdPIDst'])
+    df4['ThresholdPercentegeMaliciousFlowsPerIPDst'] = [value['ThresholdPercentegeMaliciousFlowsPerIPDst'] for value in dConfusion.values()]
+    df4['ThresholdCounterMaliciousFlowsPerIPDst'] = [value['ThresholdCounterMaliciousFlowsPerIPDst'] for value in dConfusion.values()]
+    df4['criteriaIPDstEnsembling'] = [value['criteriaIPDstEnsembling'] for value in dConfusion.values()]
+    df4['ThresholdMaliciousIPSrc-IPDst'] = [value['ThresholdMaliciousIPSrc-IPDst'] for value in dConfusion.values()]
+    df4['FP'] = [value['FP'] for value in dConfusion.values()]
+    df4['FN'] = [value['FN'] for value in dConfusion.values()]
+    df4['TP'] = [value['TP'] for value in dConfusion.values()]
+    df4['TN'] = [value['TN'] for value in dConfusion.values()]
     
-    return df3
+    return df4
 
 print('Starting')
 
@@ -164,7 +165,7 @@ for counter in [0,1,5,10,25,50]:
 
            export_csv = df2.to_csv ('resultCounter'+str(counter)+'-Percentege'+str(TCPEP)+'CountThreshold'+str(count_threshold), index = None, header=True)
            #Add a row to the confusion matrix dataset
-           dConfusion ['Percentege:'+str(percentege)+'-Counter:'+str(counter)+'ThresholdIPDst:'+str(count_threshold)]={'ThresholdPercentegeMaliciousFlowsPerIPDst': percentege, 'ThresholdCounterMaliciousFlowsPerIPDst': counter, 'ThresholdMaliciousIPSrc-IPDst': count_threshold, 'FP': FP, 'FN': FN, 'TP': TP, 'TN': TN}
+           dConfusion ['Percentege:'+str(percentege)+'-Counter:'+str(counter)+'ThresholdIPDst:'+str(count_threshold)]={'ThresholdPercentegeMaliciousFlowsPerIPDst': percentege, 'ThresholdCounterMaliciousFlowsPerIPDst': counter, 'criteriaIPDstEnsembling':'IPDstcounterThreshold', 'ThresholdMaliciousIPSrc-IPDst': count_threshold, 'FP': FP, 'FN': FN, 'TP': TP, 'TN': TN}
                 
 
 
@@ -177,7 +178,7 @@ for counter in [0,1,5,10,25,50]:
            export_csv = df3.to_csv ('resultCounter'+str(counter)+'-Percentege'+str(TCPEP)+'PercentegeThreshold'+str(percentege_threshold), index = None, header=True)
 
            #Add a row to the confusion matrix dataset
-           dConfusion ['Percentege:'+str(percentege)+'-Counter:'+str(counter)+'ThresholdIPDst:'+str(percentege_threshold)]={'ThresholdPercentegeMaliciousFlowsPerIPDst': percentege, 'ThresholdCounterMaliciousFlowsPerIPDst': counter, 'ThresholdMaliciousIPSrc-IPDst': percentege_threshold, 'FP': FP, 'FN': FN, 'TP': TP, 'TN': TN}
+           dConfusion ['Percentege:'+str(percentege)+'-Counter:'+str(counter)+'ThresholdIPDst:'+str(percentege_threshold)]={'ThresholdPercentegeMaliciousFlowsPerIPDst': percentege, 'ThresholdCounterMaliciousFlowsPerIPDst': counter, 'criteriaIPDstEnsembling':'IPDstPercentegeThreshold', 'ThresholdMaliciousIPSrc-IPDst': percentege_threshold, 'FP': FP, 'FN': FN, 'TP': TP, 'TN': TN}
            
        os.chdir('..')
 
