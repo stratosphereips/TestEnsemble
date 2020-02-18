@@ -1,0 +1,332 @@
+﻿Datos:
+1)Resuelve la primer fase de la tesis, muchas predicciones para un flujo, decidir predicción para el flujo
+2) Pruebas hechas con un dataset mixed de Stratosphere: https://mcfp.felk.cvut.cz/publicDatasets/CTU-Malware-Capture-Botnet-51/
+
+
+
+
+﻿Resultados de las pruebas
+
+
+Voting (experimento2-voting.py)
+1-Majority voting (hard)
+Accuracy: 0.9945719941 (+/- 0.0064141127) [Logistic Regression]
+Accuracy: 0.9999557803 (+/- 0.0000413645) [Random Forest]
+Accuracy: 0.9899729966 (+/- 0.0124655918) [naive Bayes]
+Accuracy: 0.9973136314 (+/- 0.0028659845) [Ensemble]
+
+
+2-Usando la suma de las probabilidades predecidas (soft)
+eclf = VotingClassifier(estimators=[('lr', clf1), ('rf', clf2), ('gnb', clf3)], voting='soft') , cambia el parámetro hard por soft
+
+
+Accuracy: 0.9945719941 (+/- 0.0064141127) [Logistic Regression]
+Accuracy: 0.9999557803 (+/- 0.0000413645) [Random Forest]
+Accuracy: 0.9899729966 (+/- 0.0124655918) [naive Bayes]
+Accuracy: 0.9975347114 (+/- 0.0029525249) [Ensemble]
+
+
+Las dos técnicas de voting dan igual. Nos planteamos que mejora al LR y al Naive Bayes pero no mejora al RF..eso puede ser porque al sumar los otros dos algoritmos que son peores, en algún caso son mayoría esos (2 de 3 deciden mal)
+
+
+Como para corroborarlo voy a probar correrlo dandole pesos o probabilidades a cada uno
+Idea de la referencia: https://sebastianraschka.com/Articles/2014_ensemble_classifier.html
+
+
+Accuracy: 0.9945719941 (+/- 0.0064141127) [Logistic Regression]
+Accuracy: 0.9999557803 (+/- 0.0000413645) [Random Forest]
+Accuracy: 0.9899729966 (+/- 0.0124655918) [Naive Bayes]
+
+
+w1 es el peso para LR
+w2 es el peso para RF
+w3 es el peso para NB
+
+
+
+
+     w1   w2   w3    mean           std
+0   1.0  1.0  2.0  0.992272  0.010004
+1   1.0  1.0  3.0  0.991266  0.011357
+2   1.0  2.0  1.0  0.999624  0.000643
+3   1.0  2.0  2.0  0.997579  0.002871
+4   1.0  2.0  3.0  0.992582  0.009729
+5   1.0  3.0  1.0  0.999912  0.000103 (el que mejor da)
+6   1.0  3.0  2.0  0.999635  0.000648 (el segundo mejor)
+7   1.0  3.0  3.0  0.997568  0.002892
+8   2.0  1.0  1.0  0.997446  0.002932
+9   2.0  1.0  2.0  0.997214  0.003266
+10  2.0  1.0  3.0  0.992151  0.010176
+11  2.0  2.0  1.0  0.997535  0.002875
+12  2.0  2.0  3.0  0.997258  0.003229
+13  2.0  3.0  1.0  0.999635  0.000621(el segundo mejor)
+14  2.0  3.0  2.0  0.997568  0.002865
+15  2.0  3.0  3.0  0.997557  0.002912
+16  3.0  1.0  1.0  0.997148  0.002982
+17  3.0  1.0  2.0  0.997391  0.002952
+18  3.0  1.0  3.0  0.996905  0.003442
+19  3.0  2.0  1.0  0.997413  0.002924
+20  3.0  2.0  2.0  0.997490  0.002956
+21  3.0  2.0  3.0  0.997457  0.002988
+22  3.0  3.0  1.0  0.997546  0.002846
+23  3.0  3.0  2.0  0.997546  0.002906
+
+
+Los 2 mejores no mejoran RF
+
+
+Boosting (experimento2-boosting.py)
+Adaboost (experimento2-Adaboost.py)
+Accuracy: 0.9945719941 (+/- 0.0064141127) [Logistic Regression]
+Accuracy: 0.9999557803 (+/- 0.0000413645) [Random Forest]
+Accuracy: 0.9899729966 (+/- 0.0124655918) [Naive Bayes]
+Accuracy: 0.9976010379 (+/- 0.0028710949) [SVC]
+Accuracy: 0.9997567974 (+/- 0.0002254790) [KNeighbords]
+Accuracy: 0.9979105938 (+/- 0.0024327641) [MLP]
+Accuracy: 0.9999336723 (+/- 0.0000644568) [DT]
+
+
+Accuracy: 0.9869775963 (+/- 0.0111036902) [Adaboost con LR]
+Accuracy: 0.9999668343 (+/- 0.0000442209) [Adaboost con RF]
+Accuracy: 0.9106522637 (+/- 0.1023008497) [Adaboost con GaussianNB]
+Accuracy: 0.9999336723 (+/- 0.0000644568) [Adaboost con DT]
+
+
+
+
+
+
+
+
+Adaboost mejora para RF y es igual DT. Los demás no los mejora
+
+
+GradientBoost (experimento2-Gradientboost.py)
+Accuracy: 0.9945719941 (+/- 0.0064141127) [Logistic Regression]
+Accuracy: 0.9999557803 (+/- 0.0000413645) [Random Forest]
+Accuracy: 0.9899729966 (+/- 0.0124655918) [Naive Bayes]
+Accuracy: 0.9976010379 (+/- 0.0028710949) [SVC]
+Accuracy: 0.9997567974 (+/- 0.0002254790) [KNeighbords]
+Accuracy: 0.9979105938 (+/- 0.0024327641) [MLP]
+Accuracy: 0.9999336723 (+/- 0.0000644568) [DT]
+Accuracy: 0.9999336723 (+/- 0.0000644568) [GradientBoostingClassifier Train]
+
+
+Mejora a todos menos al RF, el DT queda igual
+GradientBoost no funciona con un algoritmo base
+
+
+Bagging con distintos seeds
+********Bagging (mejora RF y GaussianNB, no mejora LR ni DT)- Sin random
+LR:
+sin bagging Accuracy: 0.9945719941 (+/- 0.0064141127)
+con bagging Accuracy: 0.9941738552 (+/- 0.0173125478)
+
+
+RF
+sin bagging Accuracy: 0.9999557803 (+/- 0.0000413645)
+con bagging Accuracy: 0.9999778908 (+/- 0.0001326553)
+
+
+GaussianNB
+sin bagging: ('Method: ', GaussianNB(priors=None, var_smoothing=1e-09))
+Accuracy: 0.9899729966 (+/- 0.0124655918) [GaussianNB(priors=None, var_smoothing=1e-09)]
+con bagging: ('Method (con bagging): ', GaussianNB(priors=None, var_smoothing=1e-09))
+Accuracy: 0.9917858957 (+/- 0.0268730675)
+
+
+DecisionTree
+Sin bagging Accuracy: 0.9999778896 (+/- 0.0000442209)
+con bagging Accuracy: 0.9999447306 (+/- 0.0002265342)
+
+
+***Bagging (mejora RF y GaussianNB, no mejora LR ni DT)-
+
+
+***Con random_state=5 (no mejora ni LR ni DT)
+LR:
+sin bagging  0.9945719941 (+/- 0.0064141127)
+con bagging  0.9941738552 (+/- 0.0173125478)
+
+
+RF
+sin bagging 0.9999557803 (+/- 0.0000413645)
+con bagging 0.9999778908 (+/- 0.0001326553)
+
+
+GaussianNB
+sin bagging:0.9899729966 (+/- 0.0124655918)  
+con bagging: 0.9917637804 (+/- 0.0271037724)
+
+
+DecisionTree
+Sin bagging Accuracy:  0.9999668343 (+/- 0.0000442209)
+con bagging: Accuracy: 0.9999447306 (+/- 0.0002265342)
+
+
+***Bagging (el bagging con este seed mejora al LR y al DT)
+***Con random_state=8
+LR:
+sin bagging  Accuracy: 0.9945719941 (+/- 0.0064141127)
+con bagging  Accuracy: 0.9945609389 (+/- 0.0128712550)
+
+
+RF
+sin bagging Accuracy: 0.9999557803 (+/- 0.0000413645)
+con bagging Accuracy: 0.9999778896 (+/- 0.0000884418)
+
+
+GaussianNB
+Sin bagging Accuracy: 0.9899729966 (+/- 0.0124655918)
+Con bagging Accuracy: 0.9900946028 (+/- 0.0242525773)
+
+
+DecisionTree
+Sin bagging Accuracy:  0.9999557791 (+/- 0.0000541593)
+con bagging: 0.9999778896 (+/- 0.0000884418)
+
+
+Kneighbords
+Sin bagging 0.9997567974 (+/- 0.0002254790)
+Con bagging
+
+
+Bagging con seed 8 mejora RF, Gaussian NB y Decision Tree...LR queda un poquito abajo con bagging.
+
+
+https://docs.google.com/document/d/1tg8iN_tEl0hFHG420GEd863kK3BPxtBh3jnjws5nEnc/edit
+
+
+
+
+
+
+DADO QUE TOMANDO COMO ALGORITMOS BASE LR, RF y Gaussian NB no veo mejora con el ensembling respecto a RF (sobre todo con voting, salvo en voting con peso (dandole determinado peso ** ver resultados anteriores) VOY A REALIZAR PRUEBAS CAMBIANDO RF por otros algoritmos:
+
+
+Pruebas con LR,SVM y Gaussian NB
+Probé softvoting sin peso:
+
+
+Accuracy: 0.9945719941 (+/- 0.0064141127) [Logistic Regression]
+Accuracy: 0.9983859439 (+/- 0.0020822046) [svc]
+Accuracy: 0.9899729966 (+/- 0.0124655918) [naive Bayes]
+Accuracy: 0.9974683874 (+/- 0.0029198093) [Ensemble]
+
+
+No hay mejora para SVC
+
+
+Ahora voting con peso:
+
+
+
+
+No hay mejora para SVC con los 2 mejores...el que mejor da se acerca bastante pero no es ni siquiera igual al accuracy de SVC
+
+
+
+
+Pruebas con LR,KNeighbords y Gaussian NB
+Probé softvoting sin peso:
+
+
+Accuracy: 0.9945719941 (+/- 0.0064141127) [Logistic Regression]
+Accuracy: 0.9997567974 (+/- 0.0002254790) [kneighbords]
+Accuracy: 0.9899729966 (+/- 0.0124655918) [naive Bayes]
+Accuracy: 0.9975347126 (+/- 0.0029263305) [Ensemble]
+
+
+No hay mejora para Kneighbords
+
+
+Ahora voting con peso:
+
+
+    w1   w2   w3     mean           std
+0   1.0  1.0  2.0  0.992272  0.010004
+1   1.0  1.0  3.0  0.991266  0.011357
+2   1.0  2.0  1.0  0.999757  0.000254 (el que mejor da en accuracy)
+3   1.0  2.0  2.0  0.997546  0.002880
+4   1.0  2.0  3.0  0.992582  0.009729
+5   1.0  3.0  1.0  0.999757  0.000254 (mismos valores que 2)
+6   1.0  3.0  2.0  0.999746  0.000254 (el segundo en accuracy)
+7   1.0  3.0  3.0  0.997546  0.002880
+8   2.0  1.0  1.0  0.997502  0.002961
+9   2.0  1.0  2.0  0.997225  0.003246
+10  2.0  1.0  3.0  0.992151  0.010176
+11  2.0  2.0  1.0  0.997557  0.002860
+12  2.0  2.0  3.0  0.997236  0.003216
+13  2.0  3.0  1.0  0.999757  0.000254 (mismos valores que 2)
+14  2.0  3.0  2.0  0.997579  0.002845
+15  2.0  3.0  3.0  0.997535  0.002900
+16  3.0  1.0  1.0  0.997148  0.002982
+17  3.0  1.0  2.0  0.997446  0.002983
+18  3.0  1.0  3.0  0.996905  0.003442
+19  3.0  2.0  1.0  0.997524  0.002921
+20  3.0  2.0  2.0  0.997502  0.002961
+21  3.0  2.0  3.0  0.997457  0.002988
+22  3.0  3.0  1.0  0.997568  0.002857
+23  3.0  3.0  2.0  0.997557  0.002886
+
+
+ 
+
+
+Pruebas con LR,DT y Gaussian NB
+Probé softvoting sin peso:
+Accuracy: 0.9945719941 (+/- 0.0064141127) [Logistic Regression]
+Accuracy: 0.9899729966 (+/- 0.0124655918) [Naive Bayes]
+Accuracy: 0.9999336723 (+/- 0.0000644568) [DT]
+Accuracy: 0.9975347126 (+/- 0.0029263305) [Ensemble] 
+Mejora LR y Naive Bayes pero no DT
+
+
+Ahora voting con peso:
+    w1   w2   w3    mean           std
+0   1.0  1.0  2.0  0.992272  0.010004
+1   1.0  1.0  3.0  0.991266  0.011357
+2   1.0  2.0  1.0  0.999923  0.000066
+3   1.0  2.0  2.0  0.997546  0.002854
+4   1.0  2.0  3.0  0.992582  0.009729
+5   1.0  3.0  1.0  0.999934  0.000064 (ek mejor)
+6   1.0  3.0  2.0  0.999912  0.000075 (el segundo mejor)
+7   1.0  3.0  3.0  0.997535  0.002875
+8   2.0  1.0  1.0  0.997490  0.002956
+9   2.0  1.0  2.0  0.997214  0.003214
+10  2.0  1.0  3.0  0.992151  0.010176
+11  2.0  2.0  1.0  0.997546  0.002854
+12  2.0  2.0  3.0  0.997225  0.003210
+13  2.0  3.0  1.0  0.999934  0.000064 (el mejor)
+14  2.0  3.0  2.0  0.997557  0.002834
+15  2.0  3.0  3.0  0.997524  0.002895
+16  3.0  1.0  1.0  0.997148  0.002982
+17  3.0  1.0  2.0  0.997446  0.002957
+18  3.0  1.0  3.0  0.996882  0.003429
+19  3.0  2.0  1.0  0.997513  0.002915
+20  3.0  2.0  2.0  0.997502  0.002935
+21  3.0  2.0  3.0  0.997446  0.002957
+22  3.0  3.0  1.0  0.997546  0.002872
+23  3.0  3.0  2.0  0.997546  0.002854
+
+
+Ni el mejor ni el segundo mejor resultado mejoran DT
+
+
+Nota:
+Para ver las diferencias probé con otro dataset a ver si se comportaba similar:
+https://mcfp.felk.cvut.cz/publicDatasets/CTU-Malware-Capture-Botnet-52/detailed-bidirectional-flow-labels/capture20110818-2.binetflow
+Pruebas con LR,KNeighbords y Gaussian NB
+Probé softvoting sin peso:
+
+
+Accuracy: 0.9648124865 (+/- 0.0626432628) [Logistic Regression]
+Accuracy: 0.9748277024 (+/- 0.0496566367) [kneighbords]
+Accuracy: 0.9329352320 (+/- 0.1341295361) [naive Bayes]
+Accuracy: 0.9680293983 (+/- 0.0639412035) [Ensemble]
+
+
+RESUMEN:
+Voting: KNeighbords mejora con peso
+Boosting: mejora para DT, igual para RF y peor para Naive Bayes y LR
+Bagging: con seed = 8 mejora al LR, RF, NB y DT
