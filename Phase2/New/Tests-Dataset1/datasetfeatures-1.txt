@@ -1,9 +1,0 @@
-﻿1) Dataset:capture20110818-binetflow.csv
-Bajado de:https://mcfp.felk.cvut.cz/publicDatasets/CTU-Malware-Capture-Botnet-51/detailed-bidirectional-flow-l...
-Período de tiempo:4.75hs
-Máquinas limpias:6
-Máquinas infectadas:10
-Más info: https://mcfp.felk.cvut.cz/publicDatasets/CTU-Malware-Capture-Botnet-51/
-
-
-
