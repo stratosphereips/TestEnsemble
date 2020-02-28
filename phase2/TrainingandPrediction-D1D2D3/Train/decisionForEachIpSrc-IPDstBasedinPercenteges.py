@@ -26,32 +26,6 @@ from sklearn.ensemble import VotingClassifier
 
 dateparse = lambda x: pd.datetime.strptime(x, '%Y/%m/%d %H:%M:%S.%f') # 2018/07/22 13:01:34.892833
 
-def process_files (filename):
-   ####!!!!!!!!!!!!!!!estas dos lineas llevarlas afuera y no llamar a esta funcion
-   archivo=open(filename) 
-   
-   dataset = pd.read_csv(archivo, sep=',')
-
-   # Clean the normal dataset by deleting the rows without Label (now only the management records from Argus)
-   #dataset = dataset.dropna(subset=['Label'], how='any', axis=0)
-
-    # Replace the column Label for only 'Malware', 'Normal' or 'Background'
-   #dataset.Label = dataset.Label.str.replace(r'(^.*Normal.*$)', 'Normal')
-   #dataset.Label = dataset.Label.str.replace(r'(^.*Botnet.*$)', 'Malware')
-   #dataset.Label = dataset.Label.str.replace(r'(^.*Normal.*$)', 'Normal')
-   #dataset.Label = dataset.Label.str.replace(r'(^.*To-Background-CVUT-Proxy.*$)', 'malware')
-   #dataset.Label = dataset.Label.str.replace(r'(^.*Background.*$)', 'Unknow')
-   
-   # There is still one more label without normal, malware or backround. (an error), so delete it.
-   #dataset = dataset[~dataset.Label.str.contains("Established")]
-   # Also delete all the rows that are labeled 'Unknow'
-   #The definitive ensembling will not receive labeled flows as Unknoe
-   #dataset = dataset[~dataset.Label.str.contains("Unknow")]
-   
-   #dataset = dataset.drop('CCDetector(Normal:CC:Unknown)', axis=1)  
-
-   return dataset
-##
 
 
 # This function is used to convert string features into categories for pandas
@@ -306,7 +280,6 @@ def getStateFromFlags(state, pkts):
             #las escrituras en la base de datos fueron reemplazadas por un valor concreto 
             return 'Indefinido' 
 
-
 def process_dataset_to_countersbyType (df):
 #Arma un diccionario en función del dataset recibido
 
@@ -320,10 +293,10 @@ def process_dataset_to_countersbyType (df):
            d[t.SrcAddr] = {'total1': 0, 'normal': 0, 'malware': 0 }
        if t.DstAddr not in d[t.SrcAddr].keys():
            d[t.SrcAddr][t.DstAddr] = {'total2': 0, 'normal': 0, 'malware': 0}
-           d2[t.SrcAddr+"-"+t.DstAddr] = {'SrcAddr': t.SrcAddr, 'DstAddr': t.DstAddr, 'TCPEstablishedPercentage': 0, 'TCPNotEstablishedPercentage': 0, 'UDPEstablishedPercentage': 0, 'UDPNotEstablishedPercentage': 0,'cantTCPE': 0,'cantTCPNE': 0, 'cantUDPE': 0, 'cantUDPNE': 0, 'totalFlows': 0, 'totalPackets': 0, 'totalBytes': 0, 'TCPELabel':'Clean', 'TCPNELabel':'Clean', 'UDPELabel':'Clean', 'UDPNELabel':'Clean', 'FinalLabel':'Clean', 'srcOriginalLabel': 'Clean'}
-       d2 [t.SrcAddr+"-"+t.DstAddr]['totalFlows']+= 1
-       d2 [t.SrcAddr+"-"+t.DstAddr]['totalPackets']+= t.TotPkts
-       d2 [t.SrcAddr+"-"+t.DstAddr]['totalBytes']+= t.TotBytes
+           d2[str(t.SrcAddr)+"-"+str(t.DstAddr)] = {'SrcAddr': t.SrcAddr, 'DstAddr': t.DstAddr, 'TCPEstablishedPercentage': 0, 'TCPNotEstablishedPercentage': 0, 'UDPEstablishedPercentage': 0, 'UDPNotEstablishedPercentage': 0,'cantTCPE': 0,'cantTCPNE': 0, 'cantUDPE': 0, 'cantUDPNE': 0, 'totalFlows': 0, 'totalPackets': 0, 'totalBytes': 0, 'TCPELabel':'Clean', 'TCPNELabel':'Clean', 'UDPELabel':'Clean', 'UDPNELabel':'Clean', 'FinalLabel':'Clean', 'srcOriginalLabel': 'Clean'}
+       d2 [str(t.SrcAddr)+"-"+str(t.DstAddr)]['totalFlows']+= 1
+       d2 [str(t.SrcAddr)+"-"+str(t.DstAddr)]['totalPackets']+= t.TotPkts
+       d2 [str(t.SrcAddr)+"-"+str(t.DstAddr)]['totalBytes']+= t.TotBytes
        if t.Proto not in d[t.SrcAddr][t.DstAddr].keys():
            d[t.SrcAddr][t.DstAddr][t.Proto] = {'total3': 0, 'normal': 0, 'malware': 0 }
        state=getStateFromFlags(t.State,t.TotPkts)
@@ -350,6 +323,7 @@ def process_dataset_to_countersbyType (df):
            d[t.SrcAddr][t.DstAddr][t.Proto][state]['malware'] += 1
 
    return d,d2
+
 
 # compute some statistics...
 def get_stats(d,src, dst, proto, state):
@@ -498,34 +472,110 @@ def build_dataset_with_infected_labels(df,TCPEP,countTCPE,TCPNEP,countTCPNE,UDPE
    print(FN)
    return  df2
 
-print('Basic Processing Mixed Test Dataset. Real mixed on real-time')
+def get_TP_TN_FP_FN(df):
+#df is the original dataset
+#d is the dictionary created with a counter that repesent the total infected pairs IPSrc-IPDst resulting of phase2 ensembling
+#if the totalInfectedDestination counter is great or equal to a threshold parameter --> the IPSrc is labeled as infected
+#d2 is the result dictionary
+
+     TP = 0
+     FP = 0
+     TN = 0
+     FN = 0 
+
+     for t in df.itertuples():
+         if (t.FinalLabel=='Infected'):
+             if (t.srcOriginalLabel=='Infected'):
+                 TP +=1
+             else:
+                 if (t.srcOriginalLabel=='Clean'):
+                     FP +=1
+         else:
+             if (t.srcOriginalLabel=='Infected'):
+                 FN +=1
+             else:
+                 if (t.srcOriginalLabel=='Clean'):
+                   TN +=1
+             	             
+
+     return TP, FP, TN, FN			
+
+def create_dataset_confusionmatrix(dConfusion):
+						    
+    dfConfusion = pd.DataFrame([key for key in dConfusion.keys()], columns=['PercentegeCountThreshold-IPSrc-IPDst'])
+    dfConfusion['ThresholdPercentegeMaliciousFlowsPerIPDst'] = [value['ThresholdPercentegeMaliciousFlowsPerIPDst'] for value in dConfusion.values()]
+    dfConfusion['ThresholdCounterMaliciousFlowsPerIPDst'] = [value['ThresholdCounterMaliciousFlowsPerIPDst'] for value in dConfusion.values()]
+    dfConfusion['FP'] = [value['FP'] for value in dConfusion.values()]
+    dfConfusion['FN'] = [value['FN'] for value in dConfusion.values()]
+    dfConfusion['TP'] = [value['TP'] for value in dConfusion.values()]
+    dfConfusion['TN'] = [value['TN'] for value in dConfusion.values()]
+    dfConfusion['FalsePositiveRate'] = [value['FalsePositiveRate'] for value in dConfusion.values()]
+    dfConfusion['TruePositiveRate'] = [value['TruePositiveRate'] for value in dConfusion.values()]
+    dfConfusion['F1Score'] = [value['F1Score'] for value in dConfusion.values()]
+    dfConfusion['Accuracy'] = [value['Accuracy'] for value in dConfusion.values()]
+
+    return dfConfusion
+
+
+
 print('Basic Processing Mixed Test Dataset. Real mixed on real-time')
 
-archivo=open('testing.csv') 
+archivo=open('training.csv') 
    
 df = pd.read_csv(archivo, sep=',')
+
 #The set of infected and cleaned hosts are the union of sets of infected and cleaned hosts of the three datasets
 
 infectedHosts=set(['147.32.84.165','147.32.84.191','147.32.84.192','147.32.84.193','147.32.84.204','147.32.84.205','147.32.84.206','147.32.84.207','147.32.84.208','147.32.84.209','192.168.1.121'])
 cleanHosts=set(['147.32.84.170','147.32.84.134','147.32.84.164','147.32.87.36','147.32.80.9','147.32.87.11','192.168.1.2'])
 #criteria is the list with criterions to define if the conection is malicious or not
 
-counter=0
-TCPEP=0
-df_new=build_dataset_with_infected_labels(df,0,0,0,0,0,0,0,0)
-dir=os.mkdir('resultCounter'+str(counter)+'-Percentege'+str(TCPEP))
-os.chdir('resultCounter'+str(counter)+'-Percentege'+str(TCPEP))
-datasetout="result"+str(counter)+str(TCPEP)+".csv"
-print(datasetout)
-export_csv = df_new.to_csv (datasetout, index = None, header=True)
-os.chdir('..')
-        
+dConfusion = {}
+TP=0
+TN=0
+FP=0
+FN=0
+for counter in [0,1,5,10,25,50]:
+   TCPEP=0
+   TCPNEP=0
+   UDPEP=0
+   UDPNEP=0
+   for percentege in [1,2,3,4,5]:
+      print ("counter")
+      print (counter)
+      print ("percentege")
+      print (TCPEP)
+      countTCPE=counter
+      countTCPNE=counter
+      countUDPE=counter
+      countUDPNE=counter
+      df_new=build_dataset_with_infected_labels(df,TCPEP,countTCPE,TCPNEP,countTCPNE,UDPEP,countUDPE,UDPNEP,countUDPNE)
+      dir=os.mkdir('resultCounter'+str(counter)+'-Percentege'+str(TCPEP))
+      os.chdir('resultCounter'+str(counter)+'-Percentege'+str(TCPEP))
+      datasetout="result"+str(counter)+str(TCPEP)+".csv"
+      #print(datasetout)
+      export_csv = df_new.to_csv (datasetout, index = None, header=True)
+      
+      
+      #Add a row to the confusion matrix dataset
+      TP, FP, TN, FN = get_TP_TN_FP_FN(df_new)
+      FPR = FP / float(FP + TN)
+      TPR = TP / float(TP + FN) 
+      F1Score = (2*TP) / float((2*TP) + FP + FN)
+      Accuracy =  (TP + TN) / float(TP + FP + TN + FN)
+      dConfusion ['Percentege:'+str(TCPEP)+'-Counter:'+str(counter)]={'ThresholdPercentegeMaliciousFlowsPerIPDst': TCPEP, 'ThresholdCounterMaliciousFlowsPerIPDst': counter,'FP': FP, 'FN': FN, 'TP': TP, 'TN': TN, 'FalsePositiveRate': FPR, 'TruePositiveRate': TPR, 'F1Score': F1Score, 'Accuracy': Accuracy}
+      
+      TCPEP+=0.25
+      TCPNEP+=0.25
+      UDPEP+=0.25
+      UDPNEP+=0.25
+      os.chdir('..')
+       
 
+#Armar la matriz de confusion completa (ver del otro script)   
+dfConfusion = create_dataset_confusionmatrix(dConfusion)     
+export_csv = dfConfusion.to_csv ('confusionMatrix.csv', index = None, header=True)
 
-#TCPNEP > 0 AND CANTTCPNE > LIMITE --> Infectada OR  (CUANDO NO QUIERO CONSIDERAR LA CANTIDAD --> le pongo -1
-#TCPEP
-#UDPNEP
-#UDPEP
 
 
 
