@@ -21,6 +21,8 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 
+from sklearn.metrics import confusion_matrix
+
 from sklearn.ensemble import VotingClassifier
 from sklearn.externals import joblib 
 
@@ -236,6 +238,28 @@ def makecategorical_features(dataset):
       pass
     return dataset
 
+def perf_measure(y_groundThrut, y_pred):
+    TP = 0
+    FP = 0
+    TN = 0
+    FN = 0
+
+    for i in range(len(y_pred)): 
+       if (y_pred[i]=='Normal'):
+          if(y_groundThrut[i]=='Normal'):
+             TN += 1
+       if (y_pred[i]=='Normal'):
+          if(y_groundThrut[i]=='Malware'):
+             FN += 1
+       if (y_pred[i] == 'Malware'):
+          if(y_groundThrut[i]=='Malware'):
+             TP += 1
+       if(y_pred[i]=='Malware'):
+          if(y_groundThrut[i]=='Normal'):
+             FP += 1
+           
+    return(TP, FP, TN, FN)
+
 print('Basic Processing Mixed Test Dataset. Real mixed on real-time')
 interesting_files=['dataset1-capture20110818-binetflow.csv','dataset2-capture20110819.binetflow','dataset3-2018-05-03_win11.binetflow']
 
@@ -286,15 +310,43 @@ clf5 = KNeighborsClassifier(n_neighbors=3)
 clf6 = MLPClassifier((80, 10), early_stopping=False, random_state=SEED)
 clf7 = DecisionTreeClassifier()
 
+labels = ['Logistic Regression', 'Random Forest', 'Naive Bayes', 'SVC', 'KNeighbords', 'MLP', 'DT']
+
+for clf, label in zip([clf1, clf2, clf3], labels):
+    scores = model_selection.cross_val_score(clf, X_pred_mixed, y_pred_mixed, cv=5, scoring='accuracy')
+    #ver para cada predictor si tengo que hacer el predict o ya me lo hace el cross_val_score
+    #calcular la matriz de confusión
+    print("Accuracy: %0.10f (+/- %0.10f) [%s]" % (scores.mean(), scores.std(), label))
+    clf = clf.fit (X_pred_mixed,y_pred_mixed)
+    newlabels = clf.predict (X_pred_mixed)
+    tp, fp, tn, fn = perf_measure (y_pred_mixed.array,newlabels)
+    print(label)
+    print("tn",tn)
+    print("fp",fp)
+    print("fn",fn)
+    print("tp",tp)
+
+
 eclf = joblib.load('modelo_entrenado-1-3-1.pkl')
+scores = cross_val_score(eclf, X_pred_mixed, y_pred_mixed, cv=5, scoring='accuracy')
+print("Accuracy: %0.10f (+/- %0.10f) [%s]" % (scores.mean(), scores.std(), 'Weigthed voting'))
 eclf = eclf.fit (X_pred_mixed,y_pred_mixed)
 newlabels = eclf.predict (X_pred_mixed)
+
+tp, fp, tn, fn = perf_measure (y_pred_mixed.array,newlabels)
+print("tn otro",tn)
+print("fp otro",fp)
+print("fn otro",fn)
+print("tp otro",tp)
+
 #y_pred_mixed['Label'] = newlabels
 #df_out = pd.merge (X_pred_mixed, y_pred_mixed[['Label']], how = 'left', left_index = True, right_index = True)
 #print (df_out.head(20))
 print (newlabels)
+print (y_pred_mixed)
 
 pred_dataset_ori['Label'] = newlabels
+pred_dataset_ori['groundThrut'] = y_pred_mixed
 export_csv=pred_dataset_ori.to_csv ('resultsFase1-dataset1-2-3.csv', index = None, header=True)
 print (X_pred_mixed.head(10))
 
