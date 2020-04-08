@@ -24,6 +24,14 @@ OR
 THEN the set of flows between the source IP and the destination IP is labeled AS MALWARE
 Else the set of flows between the source IP and the destination IP is labeled AS MALWARE
 
-In this script we use differents values as THRESHOLD for percentege of malware flows of each type (TCPEstablished, TCPNotEstablished, UDPEstablished, UDPNotEstablished) and as THRESHOLD for counters and we choose these with we obtain better results. To choose it we chose minimize FP and FN.
+In this script we use differents values as THRESHOLD for percentege of malware flows of each type (TCPEstablished, TCPNotEstablished, UDPEstablished, UDPNotEstablished) and as THRESHOLD for counters of each types.
+
+As results we obtain:
+- A set of resulting datasets (one dataset for each pair of thresholds).
+- A spreadsheet with confusion matrix values and associated metrics for each resulting dataset.
+
+Based on the spreadsheet we can chose wich are the better threshold (better criteria) to use in this phase.
+
+and we choose these with we obtain better results. To choose it we chose minimize FP and FN.
 
 
