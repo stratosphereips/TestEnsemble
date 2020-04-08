@@ -273,31 +273,37 @@ def analyse_flows_infected_hosts(df,infected,clean,d):
    countunknow=0
 
    for src in list(set(df.SrcAddr)):
-      if(src in infected):
-          countinfected+= 1
-          if (d[src]['normal']>0):
-              countinfectedwithnormalflows+= 1
-          if (d[src]['malware']>0):
-              countinfectedwithmalwareflows+= 1
-          if (d[src]['normal']>0)&(d[src]['malware']>0):
-              countinfectedwithbothflows+= 1
-      else:
-          if(src in clean):
-              countclean+= 1
-              if (d[src]['normal']>0):
-                  countcleanwithnormalflows+= 1
-              if (d[src]['malware']>0):
-                  countcleanwithmalwareflows+= 1
-              if (d[src]['normal']>0)&(d[src]['malware']>0):
-                  countcleanwithbothflows+= 1
-          else:
-              countunknow+= 1
-              if (d[src]['normal']>0):
-                  countunknowwithnormalflows+= 1
-              if (d[src]['malware']>0):
-                  countunknowwithmalwareflows+= 1
-              if (d[src]['normal']>0)&(d[src]['malware']>0):
-                  countunknowwithbothflows+= 1
+       if(src in infected):
+           countinfected+= 1
+           if (d[src]['normal']>0)&(d[src]['malware']>0):
+               countinfectedwithbothflows+= 1
+           else:
+               if (d[src]['normal']>0)&(d[src]['malware']==0):
+                   countinfectedwithnormalflows+= 1
+               else:    
+                   if (d[src]['malware']>0)&(d[src]['normal']==0):
+                       countinfectedwithmalwareflows+= 1
+       else:
+           if(src in clean):
+               countclean+= 1
+               if (d[src]['normal']>0)&(d[src]['malware']>0):
+                   countcleanwithbothflows+= 1
+               else:
+                   if (d[src]['normal']>0)&(d[src]['malware']==0):
+                       countcleanwithnormalflows+= 1
+                   else:    
+                       if (d[src]['malware']>0):
+                           countcleanwithmalwareflows+= 1
+           else:
+               countunknow+= 1
+               if (d[src]['normal']>0)&(d[src]['malware']>0):
+                   countunknowwithbothflows+= 1
+               else:
+                   if (d[src]['normal']>0)&(d[src]['malware']==0):
+                       countunknowwithnormalflows+= 1
+                   else:    
+                       if (d[src]['malware']>0)&(d[src]['normal']==0):
+                           countunknowwithmalwareflows+= 1
 
    return countinfectedwithmalwareflows, countinfectedwithnormalflows, countinfectedwithbothflows, countcleanwithmalwareflows, countcleanwithnormalflows, countcleanwithbothflows, countunknowwithmalwareflows, countunknowwithnormalflows, countunknowwithbothflows, countinfected, countclean, countunknow 							
 
