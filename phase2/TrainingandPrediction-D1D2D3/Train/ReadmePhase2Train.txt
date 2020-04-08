@@ -2,12 +2,28 @@ Scripts description:
 obtain_training_testing_forphase2.py: separate the dataset resultsFase1conrandom-dataset1-2-3.csv for training (80%) and testing(20%)
 
 decisionForEachPairIpSrc-IPDstBasedinPercentegesofTCP-UDPconnectionsLabels.py: this scripts take a decision for each pair IPSrc-IPDst based on 
-their labels for TCPEstabliished connections, TCPNoEstablished connections, UDPEstablished connections and UDPNoEstablished connections.
-The criteria to decide if a pair IPSrc-IPDst is part of an infection (labeled as infected) is the percentege of malicious flows is greater than
-a threshold (we use the number of flows of this type too). In this script we use differents values for percenteges and counters to choose the values
-and we obtain differents results.
+the following criteria (the decision means that the set of flows between them is part of an infection):
 
-ensemblingResultsfase2-IPDst-allposibilities.py: using the script decisionForEachPairIpSrc-IPDstBasedinPercentegesofTCP-UDPconnectionsLabels.py results, this script
-takes a decision about IPSrc based on percenteges of IPSrc-IPDstPair labeled as infected or count of pair IPSrc-IPDstPair 
-labeled as infected. The script build a confusion matrix with differents values for percenteges and counters to permit
-us decide wich is the best threshold to use for future predictions.
+First, for each set of flows between a source IP and a destination IP we calculate:
+- Number of flows belonging to TCP Established Connection labeled as malware and percentage of flows belonging to TCP Established Connection labeled as malware.
+- Number of flows belonging to TCP NotEstablished Connection labeled as malware and percentage of flows belonging to TCP NotEstablished Connection labeled as malware.
+- Number of flows belonging to UDP Established Connection labeled as malware and percentage of flows belonging to UDP Established Connection labeled as malware.
+- Number of flows belonging to UDP NotEstablished Connection labeled as malware and percentage of flows belonging to UDP Not Established Connection labeled as malware.
+- Number of flows belonging to OthersProtocol and states labeled as malware and percentage of flows belonging to OthersProtocol and states  labeled as malware.
+  
+Secondly we decide if the set of flows of each type of connection for each source IP and destination IP is malware or normal.
+The criteria is if:
+1)Number of flows belonging to TCP Established Connection labeled as malware > THRESHOLDCOUNTER AND percentage of flows belonging to TCP Established Connection labeled as malware > THRESHOLDPERCENTAGE
+OR
+2)Number of flows belonging to TCP NotEstablished Connection labeled as malware > THRESHOLDCOUNTER AND percentage of flows belonging to TCP NotEstablished Connection labeled as malware > THRESHOLDPERCENTAGE
+OR
+3)Number of flows belonging to UDP Established Connection labeled as malware > THRESHOLDCOUNTER AND percentage of flows belonging to UDP Established Connection labeled as malware > THRESHOLDPERCENTAGE
+OR
+4)Number of flows belonging to UDP NotEstablished Connection labeled as malware > THRESHOLDCOUNTER AND percentage of flows belonging to UDP NotEstablished Connection labeled as malware > THRESHOLDPERCENTAGE
+
+THEN the set of flows between the source IP and the destination IP is labeled AS MALWARE
+Else the set of flows between the source IP and the destination IP is labeled AS MALWARE
+
+In this script we use differents values as THRESHOLD for percentege of malware flows of each type (TCPEstablished, TCPNotEstablished, UDPEstablished, UDPNotEstablished) and as THRESHOLD for counters and we choose these with we obtain better results. To choose it we chose minimize FP and FN.
+
+

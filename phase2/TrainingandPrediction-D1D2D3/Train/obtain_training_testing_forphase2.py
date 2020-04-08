@@ -78,7 +78,7 @@ def obtainIPsForTrainingAndTesting(df,percentegetrain,infected,clean):
 
 def armardatasetnuevo(df,IPList):
 #df is the original dataset
-#IPsSet is the SrcAdr whose flows must be included in the new dataset
+#IPList is the SrcAdr whose flows must be included in the new dataset
 
    df = df[~df.SrcAddr.isin(IPList)]
 					
