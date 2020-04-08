@@ -293,7 +293,7 @@ def process_dataset_to_countersbyType (df):
            d[t.SrcAddr] = {'total1': 0, 'normal': 0, 'malware': 0 }
        if t.DstAddr not in d[t.SrcAddr].keys():
            d[t.SrcAddr][t.DstAddr] = {'total2': 0, 'normal': 0, 'malware': 0}
-           d2[str(t.SrcAddr)+"-"+str(t.DstAddr)] = {'SrcAddr': t.SrcAddr, 'DstAddr': t.DstAddr, 'TCPEstablishedPercentage': 0, 'TCPNotEstablishedPercentage': 0, 'UDPEstablishedPercentage': 0, 'UDPNotEstablishedPercentage': 0,'cantTCPE': 0,'cantTCPNE': 0, 'cantUDPE': 0, 'cantUDPNE': 0, 'totalFlows': 0, 'totalPackets': 0, 'totalBytes': 0, 'TCPELabel':'Clean', 'TCPNELabel':'Clean', 'UDPELabel':'Clean', 'UDPNELabel':'Clean', 'FinalLabel':'Clean', 'srcOriginalLabel': 'Clean'}
+           d2[str(t.SrcAddr)+"-"+str(t.DstAddr)] = {'SrcAddr': t.SrcAddr, 'DstAddr': t.DstAddr, 'TCPEstablishedPercentageMW': 0.00, 'TCPNotEstablishedPercentageMW': 0.00, 'UDPEstablishedPercentageMW': 0.00, 'UDPNotEstablishedPercentageMW': 0.00, 'OtroPercentageMW':0.00, 'cantTCPEMW': 0,'cantTCPNEMW': 0, 'cantUDPEMW': 0, 'cantUDPNEMW': 0, 'cantOtroMW':0, 'cantOtro':0, 'cantTCPE': 0,'cantTCPNE': 0, 'cantUDPE': 0, 'cantUDPNE': 0, 'totalFlows': 0, 'totalPackets': 0, 'totalBytes': 0, 'TCPELabel':'normal', 'TCPNELabel':'normal', 'UDPELabel':'normal', 'UDPNELabel':'normal', 'PredictLabel':'normal', 'GroundThrut': 'normal'}
        d2 [str(t.SrcAddr)+"-"+str(t.DstAddr)]['totalFlows']+= 1
        d2 [str(t.SrcAddr)+"-"+str(t.DstAddr)]['totalPackets']+= t.TotPkts
        d2 [str(t.SrcAddr)+"-"+str(t.DstAddr)]['totalBytes']+= t.TotBytes
@@ -317,10 +317,12 @@ def process_dataset_to_countersbyType (df):
            d[t.SrcAddr][t.DstAddr][t.Proto]['normal'] += 1
            d[t.SrcAddr][t.DstAddr][t.Proto][state]['normal'] += 1
        else:
-           d[t.SrcAddr]['malware'] += 1
-           d[t.SrcAddr][t.DstAddr]['malware'] += 1
-           d[t.SrcAddr][t.DstAddr][t.Proto]['malware'] += 1
-           d[t.SrcAddr][t.DstAddr][t.Proto][state]['malware'] += 1
+       #Modifiqué aca
+           if(t.Label == 'Malware'):
+               d[t.SrcAddr]['malware'] += 1
+               d[t.SrcAddr][t.DstAddr]['malware'] += 1
+               d[t.SrcAddr][t.DstAddr][t.Proto]['malware'] += 1
+               d[t.SrcAddr][t.DstAddr][t.Proto][state]['malware'] += 1
 
    return d,d2
 
@@ -330,13 +332,14 @@ def get_stats(d,src, dst, proto, state):
     pmalware_src = d[src]['malware']/d[src]['total1']
     pmalware_src_dst = d[src][dst]['malware']/d[src][dst]['total2']
     pmalware_src_dst_proto = d[src][dst][proto]['malware']/d[src][dst][proto]['total3']
-    pmalware_src_dst_proto_state = d[src][dst][proto][state]['malware']/d[src][dst][proto][state]['total4']
+    pmalware_src_dst_proto_state = 100*float(d[src][dst][proto][state]['malware'])/float(d[src][dst][proto][state]['total4'])
     # como son conjuntos disjuntos, la prob de malware deberia ser igual a
     #    1 - pnormal
-    return pmalware_src, pmalware_src_dst, pmalware_src_dst_proto, pmalware_src_dst_proto_state
+    #return pmalware_src, pmalware_src_dst, pmalware_src_dst_proto, pmalware_src_dst_proto_state
+    return pmalware_src_dst_proto_state
+    
 
-
-def get_percentegesandcounters(df,infected,clean,d,d2,TCPEP,countTCPE,TCPNEP,countTCPNE,UDPEP,countUDPE,UDPNEP,countUDPNE):
+def get_percentegesandcounters(df,infectedHosts,cleanHosts,d,d2,thresholdCounterMalwareFlows,thresholdPercentageMalwareFlows):
 #df is the original dataset
 #infected is the hosts list we know (a priori) they are infected when the dataset was created
 #clean is the hosts list we know (a priori) they are clean when the dataset was created
@@ -355,65 +358,70 @@ def get_percentegesandcounters(df,infected,clean,d,d2,TCPEP,countTCPE,TCPNEP,cou
                for state_orig in list(set(df[(df.SrcAddr == src) & (df.DstAddr == dst) & (df.Proto == proto)].State)):
                    pkts=df[(df.SrcAddr == src) & (df.DstAddr == dst) & (df.Proto == proto) & (df.State == state_orig)].TotPkts
                    state=getStateFromFlags(state_orig,pkts)
-                   psrc,pdst,pproto,pstate = get_stats(d,src, dst, proto, state)
+                   #psrc,pdst,pproto,pstate = get_stats(d,src, dst, proto, state)
+                   pstate = get_stats(d,src, dst, proto, state)
                    key=src+"-"+dst
-                   print('(## %20s %20s %10s %10s ##)'%(src, dst, proto, state))
-                   print('Probabilidad de fuente infectada: %0.2f'%(psrc))
-                   print('Probabilidad de fuente y destino infectada: %0.2f'%(pdst))
-                   print('Probabilidad de fuente y destino y protocolo infectada: %0.2f'%(pproto))
-                   print('Probabilidad de fuente y destino y protocolo y estado infectada: %0.2f'%(pstate))
-
+                   #print('Probabilidad de fuente y destino y protocolo infectada: %0.2f'%(pproto))
+                   #pstate = float(d[src][dst][proto][state]['malware']/d[src][dst][proto][state]['total4'])
+                   #print('Probabilidad de fuente y destino y protocolo y estado infectada:')
+                   #print (pstate)
+                   
                    if(proto=='tcp'):
                        if (state=='Established'):
-                           d2[key]['TCPEstablishedPercentage']=pstate
+                           d2[key]['TCPEstablishedPercentageMW']=pstate
+                           d2[key]['cantTCPEMW']=d[src][dst][proto][state]['malware']
                            d2[key]['cantTCPE']=d[src][dst][proto][state]['total4']
                        else:
                            if (state=='NotEstablished'):
-                               d2[key]['TCPNotEstablishedPercentage']=pstate
+                               d2[key]['TCPNotEstablishedPercentageMWMW']=pstate
+                               d2[key]['cantTCPNEMW']=d[src][dst][proto][state]['malware']
                                d2[key]['cantTCPNE']=d[src][dst][proto][state]['total4']
                    else:
                        if(proto=='udp'):
                            if (state=='Established'):
-                               d2[key]['UDPEstablishedPercentage']=pstate
+                               d2[key]['UDPEstablishedPercentageMW']=pstate
+                               d2[key]['cantUDPEMW']=d[src][dst][proto][state]['malware']
                                d2[key]['cantUDPE']=d[src][dst][proto][state]['total4']
                            else:
                                if (state=='NotEstablished'):
-                                   d2[key]['UDPNotEstablishedPercentage']=pstate
+                                   d2[key]['UDPNotEstablishedPercentageMW']=pstate
+                                   d2[key]['cantUDPNEMW']=d[src][dst][proto][state]['malware']
                                    d2[key]['cantUDPNE']=d[src][dst][proto][state]['total4']
-                   if(src in infected):
-                       d2[key]['srcOriginalLabel']='Infected'
-                   else:
-                       if(src in clean):
-                           d2[key]['srcOriginalLabel']='Clean'
                        else:
-                           d2[key]['srcOriginalLabel']='Unknow'
-                   #Compute the results of predictions for each DstIP based on the 8 critera. Obtain one result per criteria per dst ip
-                   #FinalLabel is the result of ensembling the results per criteria (with OR)
-                   if((d2[key]['TCPEstablishedPercentage']>TCPEP)&(d2[key]['cantTCPE']>countTCPE)):
-                       d2[key]['TCPELabel']='Infected'
-                       d2[key]['FinalLabel']='Infected'
-                   if((d2[key]['TCPNotEstablishedPercentage']>TCPNEP)&(d2[key]['cantTCPNE']>countTCPNE)):
-                       d2[key]['TCPNELabel']='Infected'
-                       d2[key]['FinalLabel']='Infected'
-                   if((d2[key]['UDPEstablishedPercentage']>UDPEP)&(d2[key]['cantUDPE']>countUDPE)):
-                       d2[key]['UDPELabel']='Infected'
-                       d2[key]['FinalLabel']='Infected'
-                   if((d2[key]['UDPNotEstablishedPercentage']>UDPNEP)&(d2[key]['cantUDPNE']>countUDPNE)):
-                       d2[key]['UDPNELabel']='Infected'
-                       d2[key]['FinalLabel']='Infected'
-#                       countInfected+=1
-#                       if (d2[key]['flujosHaciaDestLabel']=='Infectada'):
-#                           TP+=1
-#                       else:
-#                           if (d2[key]['srcOriginalLabel']=='Limpia'):
-#                               FP+=1
-#                   else:
-#                       d2[key]['flujosHaciaDestLabel']='Limpia'
-#                       if (d2[key]['srcOriginalLabel']=='Infectada'):
-#                           FN+=1
-#                       else:
-#                           if (d2[key]['srcOriginalLabel']=='Limpia'):
-#                               TN+=1
+                           #d2[key]['PredictLabel']='UNKNOW'
+                           d2[key]['cantOtroMW']+= d[src][dst][proto][state]['malware']
+                           d2[key]['cantOtro']+= d[src][dst][proto][state]['total4']
+           #Saco el porcentaje de flujos etiquetados como MW para esa IPSrc e IPDst para todos los protocolos que no sean TCP o UDP
+           if(not d2[key]['cantOtro']==0):
+               d2[key]['OtroPercentageMW']=100*float(d2[key]['cantOtroMW']/d2[key]['cantOtro'])
+           else:                  
+               d2[key]['OtroPercentageMW']=0.00
+           if(src in infectedHosts):
+               d2[key]['GroundThrut']='malware'
+           else:
+               if(src in cleanHosts):
+                   d2[key]['GroundThrut']='normal'
+               else:
+                   d2[key]['GroundThrut']='Unknow'
+           #Compute the results of predictions for each DstIP based on the 8 critera. Obtain one result per criteria per dst ip
+           #PredictLabel is the result of ensembling the results per criteria (with OR)
+           if((d2[key]['TCPEstablishedPercentageMW']>thresholdPercentageMalwareFlows)and(d2[key]['cantTCPEMW']>thresholdCounterMalwareFlows)):
+               d2[key]['TCPELabel']='malware'
+               d2[key]['PredictLabel']='malware'
+           if((d2[key]['TCPNotEstablishedPercentageMW']>thresholdPercentageMalwareFlows)and(d2[key]['cantTCPNEMW']>thresholdCounterMalwareFlows)):
+               d2[key]['TCPNELabel']='malware'
+               d2[key]['PredictLabel']='malware'
+           if((d2[key]['UDPEstablishedPercentageMW']>thresholdPercentageMalwareFlows)and(d2[key]['cantUDPEMW']>thresholdCounterMalwareFlows)):
+               d2[key]['UDPELabel']='malware'
+               d2[key]['PredictLabel']='malware'
+           if((d2[key]['UDPNotEstablishedPercentageMW']>thresholdPercentageMalwareFlows)and(d2[key]['cantUDPNEMW']>thresholdCounterMalwareFlows)):
+               d2[key]['UDPNELabel']='malware'
+               d2[key]['PredictLabel']='malware'
+           if((d2[key]['OtroPercentageMW']>thresholdPercentageMalwareFlows)and(d2[key]['cantOtroMW']>thresholdCounterMalwareFlows)):
+               d2[key]['OtroLabel']='malware'
+               d2[key]['PredictLabel']='malware'
+           
+            
    return d2,countInfected,FN,TN,TP,FP
 #  return d2
 					
@@ -423,14 +431,21 @@ def create_dataset_percentegesandcounters(d2):
     df2 = pd.DataFrame([key for key in d2.keys()], columns=['ClaveSrcIPDstIP'])
     df2['SrcAddr'] = [value['SrcAddr'] for value in d2.values()]
     df2['DstAddr'] = [value['DstAddr'] for value in d2.values()]
-    df2['TCPEstablishedPercentage'] = [value['TCPEstablishedPercentage'] for value in d2.values()]
-    df2['TCPNotEstablishedPercentage'] = [value['TCPNotEstablishedPercentage'] for value in d2.values()]
-    df2['UDPEstablishedPercentage'] = [value['UDPEstablishedPercentage'] for value in d2.values()]
-    df2['UDPNotEstablishedPercentage'] = [value['UDPNotEstablishedPercentage'] for value in d2.values()]
+    df2['TCPEstablishedPercentageMW'] = [value['TCPEstablishedPercentageMW'] for value in d2.values()]
+    df2['TCPNotEstablishedPercentageMW'] = [value['TCPNotEstablishedPercentageMW'] for value in d2.values()]
+    df2['UDPEstablishedPercentageMW'] = [value['UDPEstablishedPercentageMW'] for value in d2.values()]
+    df2['UDPNotEstablishedPercentageMW'] = [value['UDPNotEstablishedPercentageMW'] for value in d2.values()]
+    df2['OtroPercentageMW'] = [value['OtroPercentageMW'] for value in d2.values()]
+    df2['cantTCPEMW'] = [value['cantTCPEMW'] for value in d2.values()]
+    df2['cantTCPNEMW'] = [value['cantTCPNEMW'] for value in d2.values()]
+    df2['cantUDPEMW'] = [value['cantUDPEMW'] for value in d2.values()]
+    df2['cantUDPNEMW'] = [value['cantUDPNEMW'] for value in d2.values()]
+    df2['cantOtroMW'] = [value['cantOtroMW'] for value in d2.values()]
     df2['cantTCPE'] = [value['cantTCPE'] for value in d2.values()]
     df2['cantTCPNE'] = [value['cantTCPNE'] for value in d2.values()]
     df2['cantUDPE'] = [value['cantUDPE'] for value in d2.values()]
     df2['cantUDPNE'] = [value['cantUDPNE'] for value in d2.values()]
+    df2['cantOtro'] = [value['cantOtro'] for value in d2.values()]
     df2['totalFlows'] = [value['totalFlows'] for value in d2.values()]
     df2['totalPackets'] = [value['totalPackets'] for value in d2.values()]
     df2['totalBytes'] = [value['totalBytes'] for value in d2.values()]
@@ -438,8 +453,8 @@ def create_dataset_percentegesandcounters(d2):
     df2['TCPNELabel'] = [value['TCPNELabel'] for value in d2.values()]
     df2['UDPELabel'] = [value['UDPELabel'] for value in d2.values()]
     df2['UDPNELabel'] = [value['UDPNELabel'] for value in d2.values()]
-    df2['FinalLabel'] = [value['FinalLabel'] for value in d2.values()]
-    df2['srcOriginalLabel'] = [value['srcOriginalLabel'] for value in d2.values()]
+    df2['PredictLabel'] = [value['PredictLabel'] for value in d2.values()]
+    df2['GroundThrut'] = [value['GroundThrut'] for value in d2.values()]
     
     return df2
 	
@@ -451,11 +466,11 @@ def obtain_dest_ips(df):
 
    return orderedipdest
 
-def build_dataset_with_infected_labels(df,TCPEP,countTCPE,TCPNEP,countTCPNE,UDPEP,countUDPE,UDPNEP,countUDPNE):
+def build_dataset_with_infected_labels(df,thresholdCounterMalwareFlows,thresholdPercentageMalwareFlows):
    #df es el dataset de entrada
    
    d_countersbytype,d_percenteges_initial=process_dataset_to_countersbyType(df)
-   d_percenteges_final,countInfected,FN,TN,TP,FP=get_percentegesandcounters(df,infectedHosts,cleanHosts,d_countersbytype,d_percenteges_initial,TCPEP,countTCPE,TCPNEP,countTCPNE,UDPEP,countUDPE,UDPNEP,countUDPNE)
+   d_percenteges_final,countInfected,FN,TN,TP,FP=get_percentegesandcounters(df,infectedHosts,cleanHosts,d_countersbytype,d_percenteges_initial,thresholdCounterMalwareFlows,thresholdPercentageMalwareFlows)
 #d_percenteges_final=get_percentegesandcounters(df,infectedHosts,cleanHosts,d_countersbytype,d_percenteges_initial,TCPEP,countTCPE,TCPNEP,countTCPNE,UDPEP,countUDPE,UDPNEP,countUDPNE)
    df2=create_dataset_percentegesandcounters(d_percenteges_final)
    #ipdestinations=obtain_dest_ips(df2)
@@ -475,7 +490,7 @@ def build_dataset_with_infected_labels(df,TCPEP,countTCPE,TCPNEP,countTCPNE,UDPE
 def get_TP_TN_FP_FN(df):
 #df is the original dataset
 #d is the dictionary created with a counter that repesent the total infected pairs IPSrc-IPDst resulting of phase2 ensembling
-#if the totalInfectedDestination counter is great or equal to a threshold parameter --> the IPSrc is labeled as infected
+#if the total malwareDestination counter is great or equal to a threshold parameter --> the IPSrc is labeled as infected
 #d2 is the result dictionary
 
      TP = 0
@@ -484,17 +499,17 @@ def get_TP_TN_FP_FN(df):
      FN = 0 
 
      for t in df.itertuples():
-         if (t.FinalLabel=='Infected'):
-             if (t.srcOriginalLabel=='Infected'):
+         if (t.PredictLabel=='malware'):
+             if (t.GroundThrut=='malware'):
                  TP +=1
              else:
-                 if (t.srcOriginalLabel=='Clean'):
+                 if (t.GroundThrut=='normal'):
                      FP +=1
          else:
-             if (t.srcOriginalLabel=='Infected'):
+             if (t.GroundThrut=='malware'):
                  FN +=1
              else:
-                 if (t.srcOriginalLabel=='Clean'):
+                 if (t.GroundThrut=='normal'):
                    TN +=1
              	             
 
@@ -535,40 +550,43 @@ TP=0
 TN=0
 FP=0
 FN=0
-for counter in [0,1,5,10,25,50]:
-   TCPEP=0
-   TCPNEP=0
-   UDPEP=0
-   UDPNEP=0
-   for percentege in [1,2,3,4,5]:
+for thresholdCounterMalwareFlows in [0,1,5,10,25,50]:
+   thresholdPercentageMalwareFlows=0
+   for percentege in [1,2,3,4]:
       print ("counter")
-      print (counter)
+      print (thresholdCounterMalwareFlows)
       print ("percentege")
-      print (TCPEP)
-      countTCPE=counter
-      countTCPNE=counter
-      countUDPE=counter
-      countUDPNE=counter
-      df_new=build_dataset_with_infected_labels(df,TCPEP,countTCPE,TCPNEP,countTCPNE,UDPEP,countUDPE,UDPNEP,countUDPNE)
-      dir=os.mkdir('resultCounter'+str(counter)+'-Percentege'+str(TCPEP))
-      os.chdir('resultCounter'+str(counter)+'-Percentege'+str(TCPEP))
-      datasetout="result"+str(counter)+str(TCPEP)+".csv"
+      print (thresholdPercentageMalwareFlows)
+      df_new=build_dataset_with_infected_labels(df,thresholdCounterMalwareFlows,thresholdPercentageMalwareFlows)
+      dir=os.mkdir('resultCounter'+str(thresholdCounterMalwareFlows)+'-Percentege'+str(thresholdPercentageMalwareFlows))
+      os.chdir('resultCounter'+str(thresholdCounterMalwareFlows)+'-Percentege'+str(thresholdPercentageMalwareFlows))
+      datasetout="result"+str(thresholdCounterMalwareFlows)+str(thresholdPercentageMalwareFlows)+".csv"
       #print(datasetout)
       export_csv = df_new.to_csv (datasetout, index = None, header=True)
       
       
       #Add a row to the confusion matrix dataset
       TP, FP, TN, FN = get_TP_TN_FP_FN(df_new)
-      FPR = FP / float(FP + TN)
-      TPR = TP / float(TP + FN) 
-      F1Score = (2*TP) / float((2*TP) + FP + FN)
-      Accuracy =  (TP + TN) / float(TP + FP + TN + FN)
-      dConfusion ['Percentege:'+str(TCPEP)+'-Counter:'+str(counter)]={'ThresholdPercentegeMaliciousFlowsPerIPDst': TCPEP, 'ThresholdCounterMaliciousFlowsPerIPDst': counter,'FP': FP, 'FN': FN, 'TP': TP, 'TN': TN, 'FalsePositiveRate': FPR, 'TruePositiveRate': TPR, 'F1Score': F1Score, 'Accuracy': Accuracy}
+      try:
+        FPR = FP / float(FP + TN)
+      except ZeroDivisionError:
+        FPR = 0.00
+      try:
+        TPR = TP / float(TP + FN) 
+      except ZeroDivisionError:
+        TPR = 0.00
+      try:
+        F1Score = (2*TP) / float((2*TP) + FP + FN)
+      except ZeroDivisionError:
+        F1Score = 0.00 
+      try:
+        Accuracy = (TP + TN) / float(TP + FP + TN + FN)
+      except ZeroDivisionError:
+        Accuracy = 0.00
+
+      dConfusion ['Percentege:'+str(thresholdPercentageMalwareFlows)+'-Counter:'+str(thresholdCounterMalwareFlows)]={'ThresholdPercentegeMaliciousFlowsPerIPDst': thresholdPercentageMalwareFlows, 'ThresholdCounterMaliciousFlowsPerIPDst': thresholdCounterMalwareFlows,'FP': FP, 'FN': FN, 'TP': TP, 'TN': TN, 'FalsePositiveRate': FPR, 'TruePositiveRate': TPR, 'F1Score': F1Score, 'Accuracy': Accuracy}
       
-      TCPEP+=0.25
-      TCPNEP+=0.25
-      UDPEP+=0.25
-      UDPNEP+=0.25
+      thresholdPercentageMalwareFlows+=25
       os.chdir('..')
        
 
