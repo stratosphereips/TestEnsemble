@@ -271,29 +271,41 @@ def analyse_flows_infected_hosts(df,infected,clean,d):
    countinfected=0
    countclean=0
    countunknow=0
+   FP=0
+   FN=0
+   TP=0
+   TN=0
 
    for src in list(set(df.SrcAddr)):
       if(src in infected):
           countinfected+= 1
           if (d[src]['normal']>0)&(d[src]['malware']>0):
               countinfectedwithbothflows+= 1
+              FN=FN+d[src]['normal']
+              TP=TP+d[src]['malware']
           else:
               if (d[src]['normal']>0)&(d[src]['malware']==0):
                   countinfectedwithnormalflows+= 1
+                  FN=FN+d[src]['normal']
               else:    
                   if (d[src]['malware']>0)&(d[src]['normal']==0):
                       countinfectedwithmalwareflows+= 1
+                      TP=TP+d[src]['malware']
       else:
           if(src in clean):
               countclean+= 1
               if (d[src]['normal']>0)&(d[src]['malware']>0):
                   countcleanwithbothflows+= 1
+                  FP=FP+d[src]['malware']
+                  TN=TN+d[src]['normal']
               else:
                   if (d[src]['normal']>0)&(d[src]['malware']==0):
                       countcleanwithnormalflows+= 1
+                      TN=TN+d[src]['normal']
                   else:    
                       if (d[src]['malware']>0):
                           countcleanwithmalwareflows+= 1
+                          FP=FP+d[src]['malware']
           else:
               countunknow+= 1
               if (d[src]['normal']>0)&(d[src]['malware']>0):
@@ -305,7 +317,7 @@ def analyse_flows_infected_hosts(df,infected,clean,d):
                       if (d[src]['malware']>0)&(d[src]['normal']==0):
                           countunknowwithmalwareflows+= 1
 
-   return countinfectedwithmalwareflows, countinfectedwithnormalflows, countinfectedwithbothflows, countcleanwithmalwareflows, countcleanwithnormalflows, countcleanwithbothflows, countunknowwithmalwareflows, countunknowwithnormalflows, countunknowwithbothflows, countinfected, countclean, countunknow 							
+   return countinfectedwithmalwareflows, countinfectedwithnormalflows, countinfectedwithbothflows, countcleanwithmalwareflows, countcleanwithnormalflows, countcleanwithbothflows, countunknowwithmalwareflows, countunknowwithnormalflows, countunknowwithbothflows, countinfected, countclean, countunknow, FP, FN, TP, TN 							
 
 
 print('Analisis datasetResultFase1')
@@ -318,7 +330,13 @@ d_countersbytype={}
 
 df= process_file_3(nombrearchivo)
 d_countersbytype=process_dataset_to_countersbyType (df)
-countinfectedwithmalwareflows, countinfectedwithnormalflows, countinfectedwithbothflows, countcleanwithmalwareflows, countcleanwithnormalflows, countcleanwithbothflows, countunknowwithmalwareflows, countunknowwithnormalflows, countunknowwithbothflows, countinfected, countclean, countunknow=analyse_flows_infected_hosts(df,infectedHosts,cleanHosts,d_countersbytype)
+countinfectedwithmalwareflows, countinfectedwithnormalflows, countinfectedwithbothflows, countcleanwithmalwareflows, countcleanwithnormalflows, countcleanwithbothflows, countunknowwithmalwareflows, countunknowwithnormalflows, countunknowwithbothflows, countinfected, countclean, countunknow, FP, FN, TP, TN=analyse_flows_infected_hosts(df,infectedHosts,cleanHosts,d_countersbytype)
+
+print("FP (malicious flow label for a clean IPSrc): "+str(FP))
+print("FN (clean flow label for an infected IPSrc): "+str(FN))
+print("TP (malicious flow label for an infected IPSrc): "+str(TP))
+print("TN (clean flow label for a clean IPSrc): "+str(TN))
+
 
 print("countinfected: "+str(countinfected))
 print("countinfectedwithmalwareflows: "+str(countinfectedwithmalwareflows))
